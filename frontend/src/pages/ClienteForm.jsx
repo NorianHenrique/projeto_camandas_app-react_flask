@@ -8,7 +8,9 @@ import {
     Divider,
     Grid,
     InputAdornment,
-    Avatar
+    Avatar,
+    useTheme,
+    useMediaQuery
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import PersonIcon from '@mui/icons-material/Person';
@@ -32,6 +34,9 @@ const StyledButton = styled(Button)(({ theme, variant }) => ({
 
 const ClienteForm = () => {
     const { register, handleSubmit, control, setValue, formState: { errors } } = useForm();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
 
     const onSubmit = (data) => {
         console.log("Dados do cliente:", data);
@@ -61,7 +66,7 @@ const ClienteForm = () => {
 
     return (
         <Box sx={{
-          padding: 3,
+          padding: { xs: 2, md: 3 },
           backgroundColor: '#f9fafb',
           minHeight: '100vh'
         }}>
@@ -75,24 +80,27 @@ const ClienteForm = () => {
           >
             <Box sx={{ 
               background: 'linear-gradient(135deg, #43cea2 0%, #185a9d 100%)',
-              padding: '20px 24px',
+              padding: { xs: '16px', md: '20px 24px' },
               display: 'flex',
+              flexDirection: isSmall ? 'column' : 'row',
               alignItems: 'center',
-              gap: 2
+              gap: 2,
+              textAlign: isSmall ? 'center' : 'left'
             }}>
               <Avatar 
                 sx={{ 
                   bgcolor: 'white', 
                   color: '#185a9d',
                   width: 48,
-                  height: 48
+                  height: 48,
+                  marginX: isSmall ? 'auto' : 0
                 }}
               >
                 <PersonIcon />
               </Avatar>
               
               <Typography 
-                variant="h5" 
+                variant={isMobile ? "h6" : "h5"}
                 component="h1" 
                 sx={{ 
                   color: 'white', 
@@ -109,7 +117,7 @@ const ClienteForm = () => {
               component="form" 
               onSubmit={handleSubmit(onSubmit)} 
               sx={{ 
-                padding: 4,
+                padding: { xs: 2, md: 4 },
               }}
             >
               <Box sx={{ mb: 3 }}>
@@ -120,7 +128,8 @@ const ClienteForm = () => {
                     alignItems: 'center',
                     color: '#374151',
                     fontWeight: 600,
-                    mb: 1
+                    mb: 1,
+                    fontSize: isMobile ? '1rem' : '1.25rem',
                   }}
                 >
                   <AssignmentIndIcon sx={{ mr: 1, color: '#43cea2' }} />
@@ -129,7 +138,7 @@ const ClienteForm = () => {
                 <Divider />
               </Box>
               
-              <Grid container spacing={3}>
+              <Grid container spacing={isMobile ? 2 : 3}>
                 <Grid item xs={12}>
                   <TextField
                     label="Nome Completo"
@@ -221,28 +230,35 @@ const ClienteForm = () => {
                 </Grid>
               </Grid>
               
-              <Box sx={{ 
-                display: 'flex', 
-                justifyContent: 'flex-end', 
+              <Box sx={{
+                display: 'flex',
+                flexDirection: isSmall ? 'column' : 'row',
+                justifyContent: isSmall ? 'stretched' : 'flex-end',
                 gap: 2,
-                mt: 4 
+                mt: 4
               }}>
-                <StyledButton 
+                <StyledButton
                   variant="outlined"
                   startIcon={<CancelIcon />}
                   color="inherit"
-                  sx={{ color: '#6B7280' }}
+                  fullWidth={isSmall}
+                  sx={{ 
+                    color: '#6B7280',
+                    order: isSmall ? 2 : 1,
+                  }}
                 >
                   Cancelar
                 </StyledButton>
                 
-                <StyledButton 
-                  type="submit" 
-                  variant="contained" 
+                <StyledButton
+                  type="submit"
+                  variant="contained"
                   startIcon={<SaveIcon />}
-                  sx={{ 
+                  fullWidth={isSmall}
+                  sx={{
                     background: 'linear-gradient(135deg, #43cea2 0%, #185a9d 100%)',
                     color: 'white',
+                    order: isSmall ? 1 : 2,
                   }}
                 >
                   Cadastrar

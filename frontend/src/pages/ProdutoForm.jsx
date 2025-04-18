@@ -9,7 +9,9 @@ import {
     Divider,
     InputAdornment,
     Grid,
-    IconButton
+    IconButton,
+    useMediaQuery,
+    useTheme
 } from '@mui/material';
 import { 
   Save, Cancel, ImageOutlined, Description, ShoppingCart, AttachMoney
@@ -46,7 +48,7 @@ const VisuallyHiddenInput = styled('input')({
 });
 
 // Contêiner para a prévia da imagem
-const ImagePreviewContainer = styled(Box)({
+const ImagePreviewContainer = styled(Box)(({ theme }) => ({
   marginTop: 16,
   marginBottom: 16,
   display: 'flex',
@@ -57,12 +59,18 @@ const ImagePreviewContainer = styled(Box)({
   backgroundColor: '#f5f5f5',
   borderRadius: 8,
   border: '1px dashed #ccc',
-});
+  [theme.breakpoints.down('sm')]: {
+    padding: 12,
+  }
+}));
 
 const ProdutoForm = () => {
     const { register, handleSubmit, control, formState: { errors } } = useForm();
     const [foto, setFoto] = useState(null); // Para armazenar a foto
     const [previewUrl, setPreviewUrl] = useState(''); // Para a prévia da imagem
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
 
     const onSubmit = (data) => {
         // Formatar o valor unitário para número antes de enviar
@@ -102,7 +110,7 @@ const ProdutoForm = () => {
 
     return (
         <Box sx={{
-          padding: 3,
+          padding: { xs: 1.5, sm: 2, md: 3 },
           backgroundColor: '#f8f9fa',
           minHeight: '100vh'
         }}>
@@ -116,19 +124,24 @@ const ProdutoForm = () => {
           >
             <Box sx={{ 
               background: 'linear-gradient(45deg, #FF4B2B 0%, #FF416C 100%)',
-              padding: '16px 24px',
+              padding: { xs: '12px 16px', md: '16px 24px' },
               display: 'flex',
               alignItems: 'center',
-              gap: 2
+              gap: { xs: 1, md: 2 },
+              flexDirection: isMobile ? 'column' : 'row',
+              justifyContent: isMobile ? 'center' : 'flex-start'
             }}>
-              <ShoppingCart sx={{ color: 'white', fontSize: 32 }} />
+              {!isMobile && (
+                <ShoppingCart sx={{ color: 'white', fontSize: { xs: 28, md: 32 } }} />
+              )}
               <Typography 
-                variant="h5" 
+                variant={isMobile ? "h6" : "h5"} 
                 sx={{ 
                   color: 'white', 
                   fontWeight: 700,
                   letterSpacing: '0.5px',
                   textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+                  textAlign: isMobile ? 'center' : 'left'
                 }}
               >
                 Cadastro de Produto
@@ -138,10 +151,12 @@ const ProdutoForm = () => {
             <Box 
               component="form" 
               onSubmit={handleSubmit(onSubmit)} 
-              sx={{ padding: 4 }}
+              sx={{ 
+                padding: { xs: 2, sm: 3, md: 4 },
+              }}
             >
               <Typography 
-                variant="h6" 
+                variant={isMobile ? "subtitle1" : "h6"}
                 sx={{ 
                   display: 'flex',
                   alignItems: 'center',
@@ -156,7 +171,7 @@ const ProdutoForm = () => {
               </Typography>
               <Divider sx={{ mb: 3 }} />
               
-              <Grid container spacing={3}>
+              <Grid container spacing={isMobile ? 2 : 3}>
                 <Grid item xs={12}>
                   <TextField
                     label="Nome do Produto"
@@ -180,11 +195,11 @@ const ProdutoForm = () => {
                     label="Descrição"
                     fullWidth
                     multiline
-                    rows={3}
+                    rows={isMobile ? 2 : 3}
                     variant="outlined"
                     InputProps={{
                       startAdornment: (
-                        <InputAdornment position="start" sx={{ alignSelf: 'flex-start', mt: 1.5 }}>
+                        <InputAdornment position="start" sx={{ alignSelf: 'flex-start', mt: isMobile ? 1 : 1.5 }}>
                           <Description color="action" />
                         </InputAdornment>
                       ),
@@ -195,7 +210,7 @@ const ProdutoForm = () => {
                   />
                 </Grid>
                 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} sm={6}>
                   <Controller
                     name="valor_unitario"
                     control={control}
@@ -225,7 +240,7 @@ const ProdutoForm = () => {
                   />
                 </Grid>
                 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} sm={6}>
                   <Button
                     component="label"
                     variant="outlined"
@@ -261,7 +276,7 @@ const ProdutoForm = () => {
                         alt="Preview" 
                         style={{ 
                           maxWidth: '100%', 
-                          maxHeight: '200px',
+                          maxHeight: isMobile ? '150px' : '200px',
                           borderRadius: '8px',
                           objectFit: 'contain'
                         }} 
@@ -273,13 +288,15 @@ const ProdutoForm = () => {
               
               <Box sx={{ 
                 display: 'flex', 
-                justifyContent: 'flex-end', 
+                flexDirection: isMobile ? 'column-reverse' : 'row',
+                justifyContent: isMobile ? 'stretch' : 'flex-end', 
                 gap: 2,
                 mt: 4 
               }}>
                 <StyledButton 
                   variant="outlined" 
                   startIcon={<Cancel />}
+                  fullWidth={isMobile}
                   sx={{ 
                     borderColor: '#ccc',
                     color: '#777' 
@@ -292,9 +309,11 @@ const ProdutoForm = () => {
                   type="submit" 
                   variant="contained" 
                   startIcon={<Save />}
+                  fullWidth={isMobile}
                   sx={{ 
                     background: 'linear-gradient(45deg, #FF4B2B 0%, #FF416C 100%)',
                     color: 'white',
+                    mb: isMobile ? 1 : 0
                   }}
                 >
                   Cadastrar Produto

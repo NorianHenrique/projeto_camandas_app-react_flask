@@ -1,10 +1,11 @@
 import React from "react";
 import { 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
-  Paper, IconButton, Typography, Button, Toolbar, Box, Chip 
+  Paper, IconButton, Typography, Button, Toolbar, Box, Chip, 
+  useMediaQuery, useTheme, Card, CardContent, CardActions, Grid, Divider
 } from '@mui/material';
 import { 
-  Edit, Delete, Visibility, Add, MoreVert
+  Edit, Delete, Visibility, Add, MoreVert, ShoppingCart
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
@@ -97,12 +98,97 @@ const PriceDisplay = ({ value }) => {
   );
 };
 
+// Card para visualização mobile
+const ProductCard = ({ id, name, description, price }) => {
+  return (
+    <Card 
+      elevation={2} 
+      sx={{ 
+        mb: 2, 
+        borderRadius: '12px',
+        overflow: 'hidden',
+        transition: 'transform 0.3s ease',
+        '&:hover': {
+          transform: 'translateY(-5px)',
+          boxShadow: '0 8px 20px rgba(0, 0, 0, 0.1)'
+        }
+      }}
+    >
+      <Box sx={{ 
+        p: 2, 
+        display: 'flex', 
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 65, 108, 0.03)'
+      }}>
+        <Box 
+          sx={{ 
+            bgcolor: 'rgba(255, 65, 108, 0.1)', 
+            p: 1.5, 
+            borderRadius: '50%', 
+            mr: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <ShoppingCart sx={{ color: '#FF416C' }} />
+        </Box>
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+            {name}
+          </Typography>
+          <Chip 
+            label={`ID: ${id}`} 
+            size="small"
+            sx={{ bgcolor: 'rgba(255, 65, 108, 0.1)', color: '#FF416C', fontWeight: 600 }}
+          />
+        </Box>
+      </Box>
+      
+      <CardContent sx={{ p: 2 }}>
+        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+          {description}
+        </Typography>
+        
+        <Box sx={{ mb: 1 }}>
+          <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
+            Valor:
+          </Typography>
+          <PriceDisplay value={price} />
+        </Box>
+      </CardContent>
+      
+      <Divider />
+      
+      <CardActions sx={{ p: 1.5, justifyContent: 'space-around' }}>
+        <ActionIconButton color="primary" size="small">
+          <Visibility color="primary" />
+        </ActionIconButton>
+        <ActionIconButton color="secondary" size="small">
+          <Edit color="secondary" />
+        </ActionIconButton>
+        <ActionIconButton color="error" size="small">
+          <Delete color="error" />
+        </ActionIconButton>
+      </CardActions>
+    </Card>
+  );
+};
+
 function ProdutoList() {
     const navigate = useNavigate();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
+
+    // Dados de exemplo
+    const produtos = [
+      { id: 1, name: 'Produto A', description: 'Descrição do Produto A', price: 99.99 }
+    ];
 
     return (
         <Box sx={{
-          padding: 3,
+          padding: { xs: 2, sm: 3 },
           backgroundColor: '#f8f9fa', 
           minHeight: '100vh'
         }}>
@@ -116,13 +202,15 @@ function ProdutoList() {
           >
             <Toolbar sx={{ 
               background: 'linear-gradient(45deg, #FF4B2B 0%, #FF416C 100%)',
-              padding: '16px 24px', 
+              padding: { xs: '12px 16px', md: '16px 24px' }, 
               display: 'flex', 
+              flexDirection: isSmall ? 'column' : 'row',
+              alignItems: 'center',
+              gap: isSmall ? 2 : 0,
               justifyContent: 'space-between',
-              alignItems: 'center'
             }}>
               <Typography 
-                variant="h5" 
+                variant={isSmall ? "h6" : "h5"} 
                 sx={{
                   color: 'white',
                   fontWeight: 700,
@@ -136,60 +224,80 @@ function ProdutoList() {
               <AddButton 
                 onClick={() => navigate('/produto')} 
                 startIcon={<Add />}
+                fullWidth={isSmall}
               >
                 Novo Produto
               </AddButton>
             </Toolbar>
 
-            <TableContainer>
-              <Table>
-                <StyledTableHead>
-                  <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Nome</TableCell>
-                    <TableCell>Descrição</TableCell>
-                    <TableCell>Valor Unitário</TableCell>
-                    <TableCell align="center">Ações</TableCell>
-                  </TableRow>
-                </StyledTableHead>
-
-                <TableBody>
-                  <StyledTableRow key={1}>
-                    <TableCell>
-                      <Chip 
-                        label="1" 
-                        size="small" 
-                        sx={{ 
-                          backgroundColor: 'rgba(255, 65, 108, 0.1)',
-                          fontWeight: 600, 
-                          color: '#FF416C'
-                        }} 
+            {isMobile ? (
+              <Box sx={{ p: 2 }}>
+                <Grid container spacing={2}>
+                  {produtos.map(produto => (
+                    <Grid item xs={12} key={produto.id}>
+                      <ProductCard 
+                        id={produto.id}
+                        name={produto.name}
+                        description={produto.description}
+                        price={produto.price}
                       />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        Produto A
-                      </Typography>
-                    </TableCell>
-                    <TableCell>Descrição do Produto A</TableCell>
-                    <TableCell>
-                      <PriceDisplay value={99.99} />
-                    </TableCell>
-                    <TableCell align="center">
-                      <ActionIconButton color="primary">
-                        <Visibility color="primary" />
-                      </ActionIconButton>
-                      <ActionIconButton color="secondary">
-                        <Edit color="secondary" />
-                      </ActionIconButton>
-                      <ActionIconButton color="error">
-                        <Delete color="error" />
-                      </ActionIconButton>
-                    </TableCell>
-                  </StyledTableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            ) : (
+              <TableContainer>
+                <Table>
+                  <StyledTableHead>
+                    <TableRow>
+                      <TableCell>ID</TableCell>
+                      <TableCell>Nome</TableCell>
+                      <TableCell>Descrição</TableCell>
+                      <TableCell>Valor Unitário</TableCell>
+                      <TableCell align="center">Ações</TableCell>
+                    </TableRow>
+                  </StyledTableHead>
+
+                  <TableBody>
+                    {produtos.map(produto => (
+                      <StyledTableRow key={produto.id}>
+                        <TableCell>
+                          <Chip 
+                            label={produto.id} 
+                            size="small" 
+                            sx={{ 
+                              backgroundColor: 'rgba(255, 65, 108, 0.1)',
+                              fontWeight: 600, 
+                              color: '#FF416C'
+                            }} 
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {produto.name}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>{produto.description}</TableCell>
+                        <TableCell>
+                          <PriceDisplay value={produto.price} />
+                        </TableCell>
+                        <TableCell align="center">
+                          <ActionIconButton color="primary">
+                            <Visibility color="primary" />
+                          </ActionIconButton>
+                          <ActionIconButton color="secondary">
+                            <Edit color="secondary" />
+                          </ActionIconButton>
+                          <ActionIconButton color="error">
+                            <Delete color="error" />
+                          </ActionIconButton>
+                        </TableCell>
+                      </StyledTableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
           </Paper>
         </Box>
     );

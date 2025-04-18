@@ -11,7 +11,9 @@ import {
     Grid,
     Paper,
     InputAdornment,
-    Divider
+    Divider,
+    useTheme,
+    useMediaQuery
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import PersonIcon from '@mui/icons-material/Person';
@@ -23,17 +25,38 @@ import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 
 // Botão de ação estilizado
-const ActionButton = styled(Button)(({ theme }) => ({
-  borderRadius: '10px',
+const ActionButton = styled(Button)(({ theme, variant }) => ({
+  borderRadius: '12px',
   textTransform: 'none',
   padding: '10px 24px',
   fontWeight: 600,
-  boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
+  boxShadow: variant === 'contained' ? '0 5px 15px rgba(255, 107, 149, 0.3)' : 'none',
   transition: 'all 0.3s ease',
+  '&:hover': {
+    transform: 'translateY(-3px)',
+    boxShadow: variant === 'contained' 
+      ? '0 8px 20px rgba(255, 107, 149, 0.4)' 
+      : '0 4px 10px rgba(0, 0, 0, 0.1)',
+  }
+}));
+
+// Componente para título de seção
+const SectionTitle = styled(Typography)(({ theme }) => ({
+  color: '#FF6B95',
+  fontWeight: 600,
+  marginBottom: theme.spacing(1),
+  display: 'flex',
+  alignItems: 'center',
+  '& .MuiSvgIcon-root': {
+    marginRight: theme.spacing(1)
+  }
 }));
 
 const FuncionarioForm = () => {
     const { register, handleSubmit, reset, control, setValue, formState: { errors } } = useForm();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
 
     const onSubmit = (data) => {
         console.log("Dados do funcionário:", data);
@@ -63,7 +86,7 @@ const FuncionarioForm = () => {
 
     return (
         <Box sx={{
-          padding: 3,
+          padding: { xs: 2, sm: 3, md: 4 },
           backgroundColor: '#f8f9fa',
           minHeight: '100vh'
         }}>
@@ -72,45 +95,65 @@ const FuncionarioForm = () => {
                 onSubmit={handleSubmit(onSubmit)}
                 elevation={3}
                 sx={{
-                    borderRadius: '12px',
+                    borderRadius: '16px',
                     overflow: 'hidden',
+                    maxWidth: '1200px',
+                    margin: '0 auto',
+                    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.1)',
                 }}
             >
                 <Box sx={{ 
-                    padding: '16px 24px',
-                    background: 'linear-gradient(90deg, #3a7bd5 0%, #00d2ff 100%)',
+                    padding: { xs: '16px', md: '20px 30px' },
+                    background: 'linear-gradient(45deg, #FF9A8B 0%, #FF6B95 55%, #FF3CAC 100%)',
                     display: 'flex',
                     alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexDirection: isMobile ? 'column' : 'row',
                 }}>
                     <Typography 
-                        variant="h5" 
+                        variant={isMobile ? "h6" : "h5"} 
                         sx={{ 
                             color: 'white', 
-                            fontWeight: 600,
+                            fontWeight: 700,
                             letterSpacing: '0.5px',
                             textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+                            marginBottom: isMobile ? 1 : 0,
+                            textAlign: isMobile ? 'center' : 'left',
                         }}
                     >
                         Cadastro de Funcionário
                     </Typography>
+                    
+                    {!isMobile && (
+                        <Typography 
+                            variant="body2" 
+                            sx={{ 
+                                color: 'rgba(255, 255, 255, 0.9)',
+                                backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                                padding: '6px 12px',
+                                borderRadius: '20px',
+                                boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)'
+                            }}
+                        >
+                            Preencha todos os campos obrigatórios *
+                        </Typography>
+                    )}
                 </Box>
 
-                <Box sx={{ padding: 4 }}>
+                <Box sx={{ 
+                  padding: { xs: 2, sm: 3, md: 4 }
+                }}>
                     <Grid container spacing={3}>
                         <Grid item xs={12}>
-                            <Typography 
-                                variant="h6" 
-                                sx={{ 
-                                    color: '#3a7bd5', 
-                                    fontWeight: 600, 
-                                    mb: 1,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                }}
-                            >
-                                <PersonIcon sx={{ mr: 1 }} /> Dados Pessoais
-                            </Typography>
-                            <Divider sx={{ mb: 3 }} />
+                            <SectionTitle variant="h6">
+                                <PersonIcon /> Dados Pessoais
+                            </SectionTitle>
+                            <Divider sx={{ 
+                              mb: 3,
+                              '&::before, &::after': {
+                                borderColor: 'rgba(255, 107, 149, 0.2)',
+                              }
+                            }} />
                         </Grid>
                         
                         <Grid item xs={12} md={6}>
@@ -121,14 +164,14 @@ const FuncionarioForm = () => {
                                 InputProps={{
                                     startAdornment: (
                                         <InputAdornment position="start">
-                                            <PersonIcon color="action" />
+                                            <PersonIcon sx={{ color: '#FF6B95' }} />
                                         </InputAdornment>
                                     ),
                                 }}
                                 {...register('nome', { required: 'Nome é obrigatório' })} 
                                 error={!!errors.nome} 
                                 helperText={errors.nome?.message}
-                                sx={{ mb: 2 }}
+                                sx={{ mb: { xs: 2, md: 3 } }}
                             />
 
                             <Controller
@@ -153,7 +196,7 @@ const FuncionarioForm = () => {
                                         InputProps={{
                                             startAdornment: (
                                                 <InputAdornment position="start">
-                                                    <BadgeIcon color="action" />
+                                                    <BadgeIcon sx={{ color: '#FF6B95' }} />
                                                 </InputAdornment>
                                             ),
                                         }}
@@ -174,14 +217,14 @@ const FuncionarioForm = () => {
                                 InputProps={{
                                     startAdornment: (
                                         <InputAdornment position="start">
-                                            <BadgeIcon color="action" />
+                                            <BadgeIcon sx={{ color: '#FF6B95' }} />
                                         </InputAdornment>
                                     ),
                                 }}
                                 {...register('matricula', { required: 'Matrícula é obrigatória' })} 
                                 error={!!errors.matricula} 
                                 helperText={errors.matricula?.message}
-                                sx={{ mb: 2 }}
+                                sx={{ mb: { xs: 2, md: 3 } }}
                             />
 
                             <Controller
@@ -191,7 +234,7 @@ const FuncionarioForm = () => {
                                 rules={{
                                     required: 'Telefone é obrigatório',
                                     pattern: {
-                                        value: /^$\d{2}$ \d{4,5}-\d{4}$/,
+                                        value: /^$\d{2}$ \d{5}-\d{4}$/,
                                         message: 'Telefone inválido'
                                     }
                                 }}
@@ -206,7 +249,7 @@ const FuncionarioForm = () => {
                                         InputProps={{
                                             startAdornment: (
                                                 <InputAdornment position="start">
-                                                    <PhoneIcon color="action" />
+                                                    <PhoneIcon sx={{ color: '#FF6B95' }} />
                                                 </InputAdornment>
                                             ),
                                         }}
@@ -220,20 +263,18 @@ const FuncionarioForm = () => {
                         </Grid>
 
                         <Grid item xs={12}>
-                            <Typography 
+                            <SectionTitle 
                                 variant="h6" 
-                                sx={{ 
-                                    color: '#3a7bd5', 
-                                    fontWeight: 600, 
-                                    mb: 1, 
-                                    mt: 2,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                }}
+                                sx={{ mt: { xs: 2, md: 3 } }}
                             >
-                                <VpnKeyIcon sx={{ mr: 1 }} /> Credenciais de Acesso
-                            </Typography>
-                            <Divider sx={{ mb: 3 }} />
+                                <VpnKeyIcon /> Credenciais de Acesso
+                            </SectionTitle>
+                            <Divider sx={{ 
+                              mb: 3,
+                              '&::before, &::after': {
+                                borderColor: 'rgba(255, 107, 149, 0.2)',
+                              }
+                            }} />
                         </Grid>
                         
                         <Grid item xs={12} md={6}>
@@ -245,7 +286,7 @@ const FuncionarioForm = () => {
                                 InputProps={{
                                     startAdornment: (
                                         <InputAdornment position="start">
-                                            <VpnKeyIcon color="action" />
+                                            <VpnKeyIcon sx={{ color: '#FF6B95' }} />
                                         </InputAdornment>
                                     ),
                                 }}
@@ -255,6 +296,7 @@ const FuncionarioForm = () => {
                                 })}
                                 error={!!errors.senha} 
                                 helperText={errors.senha?.message}
+                                sx={{ mb: { xs: 2, md: 0 } }}
                             />
                         </Grid>
                         
@@ -267,7 +309,7 @@ const FuncionarioForm = () => {
                                     defaultValue=""
                                     startAdornment={
                                         <InputAdornment position="start">
-                                            <GroupIcon color="action" />
+                                            <GroupIcon sx={{ color: '#FF6B95' }} />
                                         </InputAdornment>
                                     }
                                     {...register('grupo')}
@@ -282,7 +324,8 @@ const FuncionarioForm = () => {
 
                     <Box sx={{ 
                         display: 'flex', 
-                        justifyContent: 'flex-end', 
+                        justifyContent: isMobile ? 'center' : 'flex-end',
+                        flexDirection: isMobile ? 'column' : 'row',
                         mt: 4,
                         gap: 2
                     }}>
@@ -291,10 +334,14 @@ const FuncionarioForm = () => {
                             color="inherit"
                             startIcon={<CancelIcon />}
                             onClick={() => reset()}
+                            fullWidth={isMobile}
                             sx={{ 
+                                borderColor: '#ddd',
+                                color: '#666',
+                                order: isMobile ? 2 : 1,
                                 '&:hover': { 
-                                    backgroundColor: '#f5f5f5',
-                                    borderColor: '#ccc',
+                                    borderColor: '#FF6B95',
+                                    color: '#FF6B95',
                                 } 
                             }}
                         >
@@ -303,15 +350,15 @@ const FuncionarioForm = () => {
 
                         <ActionButton 
                             type="submit" 
-                            variant="contained" 
-                            color="primary"
+                            variant="contained"
                             startIcon={<SaveIcon />}
+                            fullWidth={isMobile}
                             sx={{ 
-                                background: 'linear-gradient(90deg, #3a7bd5 0%, #00d2ff 100%)',
+                                order: isMobile ? 1 : 2,
+                                background: 'linear-gradient(45deg, #FF9A8B 0%, #FF6B95 55%, #FF3CAC 100%)',
+                                color: 'white',
                                 '&:hover': { 
-                                    background: 'linear-gradient(90deg, #2461b3 0%, #00afd8 100%)',
-                                    transform: 'translateY(-2px)',
-                                    boxShadow: '0 6px 16px rgba(58, 123, 213, 0.4)',
+                                    background: 'linear-gradient(45deg, #FF8A7B 0%, #FF5B85 55%, #FF2C9C 100%)',
                                 } 
                             }}
                         >
