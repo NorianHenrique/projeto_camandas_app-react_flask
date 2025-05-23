@@ -1,11 +1,17 @@
 # Sistema de Gerenciamento de Comandas (React + Flask)
+---
 
+## Status do Projeto
+Em desenvolvimento
+
+---
 # Sobre o Projeto
 Este projeto é um Sistema de Gerenciamento de Comandas completo, desenvolvido com uma arquitetura moderna que combina React no frontend e Flask no backend. 
 Ele foi projetado para auxiliar restaurantes, bares e estabelecimentos similares na gestão eficiente de clientes, produtos e funcionários, 
 otimizando o processo de atendimento e registro de vendas.
 
 O objetivo principal é fornecer uma solução intuitiva e responsiva para o controle de comandas, permitindo operações como cadastro, edição, visualização e exclusão de informações essenciais para o dia a dia do negócio.
+---
 
 ## Funcionalidades
 
@@ -40,6 +46,7 @@ Página 404 (Não Encontrada): Rota de fallback para exibir uma página amigáve
   Validação de CPF: Endpoint para verificar se um CPF já existe no banco de dados, crucial para o cadastro de funcionários.
   Gestão de Credenciais: Lida com a autenticação de usuários e possivelmente com a gestão de senhas (criptografia, etc.).
   
+---  
 # Tecnologias Utilizadas
   # Frontend
   React 19.0.0 - Biblioteca JavaScript para construção de interfaces de usuário.
