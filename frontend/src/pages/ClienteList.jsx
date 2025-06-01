@@ -1,93 +1,109 @@
-import React from "react";
+import React, { useState,useEffect } from "react";
 import { 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
-  Paper, IconButton, Typography, Button, Toolbar, Box, Avatar, Chip,
-  useMediaQuery, useTheme, Card, CardContent, Grid, Divider
+  Paper, IconButton, Typography, Button, Toolbar, Box, 
+  Card, CardContent, CardActions, Divider, Chip, Avatar,
+  Grid, useMediaQuery, useTheme, Badge
 } from '@mui/material';
-import { 
-  Edit, Delete, Visibility, Add, Person, Phone, Badge
-} from '@mui/icons-material';
-import { styled } from '@mui/material/styles';
+import { Edit, Delete, Visibility, Add, Person, Phone} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { styled } from '@mui/material/styles';
+import {getClientes,deleteCliente } from '../services/clienteService';
+import { ToastContainer, toast } from 'react-toastify'; 
+import 'react-toastify/dist/ReactToastify.css'; 
 
 // Estilizando o cabeçalho da tabela
 const StyledTableHead = styled(TableHead)(({ theme }) => ({
-  background: 'linear-gradient(to right, #f3f4f6, #e5e7eb)',
+  backgroundColor: '#f5f5f5',
   '& .MuiTableCell-head': {
     fontWeight: 700,
-    color: '#374151',
+    color: '#333',
     fontSize: '0.95rem',
+    borderBottom: '2px solid #3a7bd5',
     padding: '16px 24px',
-    borderBottom: '2px solid #43cea2',
   },
 }));
 
 // Estilizando as linhas da tabela
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
   '&:nth-of-type(odd)': {
-    backgroundColor: 'rgba(67, 206, 162, 0.04)',
+    backgroundColor: 'rgba(58, 123, 213, 0.03)',
   },
   '&:hover': {
-    backgroundColor: 'rgba(67, 206, 162, 0.08)',
+    backgroundColor: 'rgba(58, 123, 213, 0.08)',
     transition: 'background-color 0.2s ease',
   },
-  '& .MuiTableCell-root': {
-    padding: '14px 24px',
-  }
 }));
 
 // Botão de ação estilizado
-const ActionButton = styled(IconButton)(({ theme, color }) => ({
-  margin: '0 4px',
-  backgroundColor: color === 'primary' 
-    ? 'rgba(24, 90, 157, 0.08)' 
-    : color === 'secondary' 
-      ? 'rgba(156, 39, 176, 0.08)' 
-      : 'rgba(211, 47, 47, 0.08)',
-  padding: '8px',
-  transition: 'all 0.2s ease',
+const AddButton = styled(Button)(({ theme, color }) => ({
+  backgroundColor: '#3a7bd5',
+  borderRadius: '10px',
+  paddingLeft: '20px',
+  paddingRight: '20px',
+  boxShadow: '0 4px 12px rgba(58, 123, 213, 0.3)',
+  textTransform: 'none',
+  fontWeight: 600,
   '&:hover': {
-    backgroundColor: color === 'primary' 
-      ? 'rgba(24, 90, 157, 0.16)' 
-      : color === 'secondary' 
-        ? 'rgba(156, 39, 176, 0.16)' 
-        : 'rgba(211, 47, 47, 0.16)',
+    backgroundColor: '#1e5daa',
+    boxShadow: '0 6px 16px rgba(58, 123, 213, 0.4)',
     transform: 'translateY(-2px)',
-    boxShadow: '0 3px 8px rgba(0, 0, 0, 0.1)',
   },
+  transition: 'all 0.3s ease',
 }));
 
-// Card para visualização mobile
-const ClienteCard = ({ id, nome, cpf, telefone }) => {
-  const navigate = useNavigate();
-  
+// Formata CPF no padrão 000.000.000-00
+const formatCpf = (cpf) => {
+  if (!cpf) return '';
+  const str = cpf.toString();
+  if (str.length !== 11) return cpf; // Retorna original se tamanho inválido
+  return str.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+};
+
+// Formata telefone no padrão (00) 00000-0000 ou (00) 0000-0000
+const formatTelefone = (telefone) => {
+  if (!telefone) return '';
+  const str = telefone.toString();
+  if (str.length === 11) {
+    return str.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+  } else if (str.length === 10) {
+    return str.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+  }
+  return telefone;
+};
+
+
+/// Card do funcionário para exibição mobile
+const ClienteCard = ({ id, nome, cpf, telefone, onView, onEdit, onDelete }) => {
   return (
     <Card 
-      elevation={2}
       sx={{ 
         mb: 2, 
-        borderRadius: 2,
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+        borderRadius: '10px',
         overflow: 'hidden',
-        transition: 'transform 0.2s ease',
+        transition: 'all 0.3s ease',
         '&:hover': {
           transform: 'translateY(-4px)',
-          boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1)',
+          boxShadow: '0 8px 20px rgba(0, 0, 0, 0.12)'
         }
       }}
     >
-      <Box sx={{ 
-        p: 2, 
-        display: 'flex', 
-        alignItems: 'center', 
-        background: 'rgba(67, 206, 162, 0.08)',
-        borderBottom: '1px solid rgba(67, 206, 162, 0.2)'
-      }}>
-        <Avatar sx={{ 
-          bgcolor: 'rgba(67, 206, 162, 0.8)', 
-          width: 40, 
-          height: 40,
-          mr: 2
-        }}>
+      <Box 
+        sx={{ 
+          p: 2, 
+          display: 'flex', 
+          alignItems: 'center', 
+          background: 'rgba(58, 123, 213, 0.04)',
+          borderBottom: '1px solid rgba(58, 123, 213, 0.08)'
+        }}
+      >
+        <Avatar 
+          sx={{ 
+            bgcolor: '#3a7bd5', 
+            mr: 2 
+          }}
+        >
           <Person />
         </Avatar>
         <Box>
@@ -98,198 +114,301 @@ const ClienteCard = ({ id, nome, cpf, telefone }) => {
             label={`ID: ${id}`}
             size="small"
             sx={{ 
-              backgroundColor: 'rgba(67, 206, 162, 0.15)',
-              fontWeight: 600,
-              fontSize: '0.7rem',
+              backgroundColor: 'rgba(58, 123, 213, 0.1)',
+              fontWeight: 500,
+              fontSize: '0.75rem'
             }}
           />
         </Box>
       </Box>
       
-      <CardContent>
+      <CardContent sx={{ pt: 2 }}>
         <Grid container spacing={1}>
-          <Grid item xs={12} sx={{ mb: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Badge sx={{ color: '#185a9d', mr: 1 }} />
-              <Typography variant="body2" color="textSecondary">
-                CPF: <Typography component="span" variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                  {cpf}
-                </Typography>
-              </Typography>
-            </Box>
+          <Grid item xs={6}>
+            <Typography variant="body2" color="textSecondary">
+              CPF:
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                {formatCpf(cpf)}
+            </Typography>
           </Grid>
-          
-          <Grid item xs={12} sx={{ mb: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Phone sx={{ color: '#185a9d', mr: 1 }} />
-              <Typography variant="body2" color="textSecondary">
-                Tel: <Typography component="span" variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                  {telefone}
-                </Typography>
-              </Typography>
-            </Box>
-          </Grid>
-          
-          <Divider sx={{ width: '100%', mb: 2 }} />
-          
-          <Grid item xs={12}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-around' }}>
-              <ActionButton color="primary" size="small">
-                <Visibility color="primary" fontSize="small" />
-              </ActionButton>
-              <ActionButton color="secondary" size="small">
-                <Edit color="secondary" fontSize="small" />
-              </ActionButton>
-              <ActionButton color="error" size="small">
-                <Delete color="error" fontSize="small" />
-              </ActionButton>
-            </Box>
+           <Grid item xs={6}>
+            <Typography variant="body2" color="textSecondary">
+              Telefone:
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+              {formatTelefone(telefone)}
+            </Typography>
           </Grid>
         </Grid>
       </CardContent>
+      
+      <Divider />
+      <CardActions sx={{ justifyContent: 'space-around', p: 1 }}>
+        <IconButton size="small" onClick={onView} sx={{ 
+          color: '#3a7bd5', 
+          backgroundColor: 'rgba(58, 123, 213, 0.08)',
+          '&:hover': { 
+            backgroundColor: 'rgba(58, 123, 213, 0.15)',
+          }
+        }}>
+          <Visibility fontSize="small" />
+        </IconButton>
+        
+        <IconButton size="small" onClick={onEdit} sx={{ 
+          color: '#ffc107', 
+          backgroundColor: 'rgba(255, 193, 7, 0.08)',
+          '&:hover': { 
+            backgroundColor: 'rgba(255, 193, 7, 0.15)',
+          }
+        }}>
+          <Edit fontSize="small" />
+        </IconButton>
+        
+        <IconButton size="small" onClick={onDelete} sx={{ 
+          color: '#f44336', 
+          backgroundColor: 'rgba(244, 67, 54, 0.08)',
+          '&:hover': { 
+            backgroundColor: 'rgba(244, 67, 54, 0.15)',
+          }
+        }}>
+          <Delete fontSize="small" />
+        </IconButton>
+      </CardActions>
     </Card>
   );
 };
 
-function ClienteList() {
+function ClienteList(){
     const navigate = useNavigate();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
+    
+    const [clientes,setClientes] = useState([])
 
-    // Dados de exemplo
-    const clientes = [
-      { id: 1, nome: 'João Silva', cpf: '123.456.789-01', telefone: '(11) 91234-5678' }
-    ];
+    useEffect(() =>{
+       fetchClientes();
+    },[])
 
-    return (
-      <Box sx={{
-        padding: { xs: 2, md: 3 },
-        backgroundColor: '#f9fafb', 
-        minHeight: '100vh'
-      }}>
-        <Paper 
-          elevation={3} 
-          sx={{
-            borderRadius: '12px',
-            overflow: 'hidden',
-            boxShadow: '0 5px 15px rgba(0, 0, 0, 0.08)',
-          }}
-        >
-          <Toolbar sx={{ 
-            background: 'linear-gradient(135deg, #43cea2 0%, #185a9d 100%)',
-            padding: { xs: '12px 16px', md: '16px 24px' }, 
-            display: 'flex', 
-            flexDirection: isMobile ? 'column' : 'row',
-            alignItems: isMobile ? 'stretch' : 'center',
-            gap: isMobile ? 2 : 0,
-            justifyContent: 'space-between',
-          }}>
-            <Typography 
-              variant={isMobile ? "h6" : "h5"} 
-              sx={{
-                color: 'white',
-                fontWeight: 700,
-                letterSpacing: '0.5px',
-                textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
-                textAlign: isMobile ? 'center' : 'left',
-              }}
-            >
-              Clientes
-            </Typography>
-            
-            <Button 
-              color="inherit" 
-              variant="contained" 
-              onClick={() => navigate('/cliente')} 
-              startIcon={<Add />}
-              fullWidth={isMobile}
-              sx={{
-                backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                borderRadius: '8px',
-                padding: '8px 20px',
-                textTransform: 'none',
-                fontWeight: 600,
-                boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
-                  boxShadow: '0 6px 15px rgba(0, 0, 0, 0.15)',
-                }
-              }}
-            >
-              Novo Cliente
-            </Button>
-          </Toolbar>
+    const fetchClientes = async () => {
+       try{
+         const data = await getClientes();
+         setClientes(data);
+       }catch(error){
+        console.error('Erro ao buscar clientes:', error);
+        toast.error('Não foi possível carregar os clientes.');
+       }
+    }
 
-          {isMobile ? (
-            <Box sx={{ p: 2 }}>
-              {clientes.map((cliente) => (
-                <ClienteCard 
-                  key={cliente.id}
-                  id={cliente.id}
-                  nome={cliente.nome}
-                  cpf={cliente.cpf}
-                  telefone={cliente.telefone}
-                />
-              ))}
-            </Box>
-          ) : (
-            <TableContainer>
-              <Table>
-                <StyledTableHead>
-                  <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Nome</TableCell>
-                    <TableCell>CPF</TableCell>
-                    <TableCell>Telefone</TableCell>
-                    <TableCell align="center">Ações</TableCell>
-                  </TableRow>
-                </StyledTableHead>
+   // Função para lidar com o clique no botão de deletar cliente
+    const handleDeleteClick = (cliente) => {
+        toast(
+          <div>
+              <Typography>
+                Tem certeza que deseja excluir o cliente <strong>{cliente.nome}</strong>?
+              </Typography>
+              <div style={{ 
+                marginTop: '10px', 
+                display: 'flex', 
+                justifyContent: 'flex-end' 
+              }}>
+                <Button
+                  variant="contained" 
+                  color="error" 
+                  size="small"
+                  onClick={() => handleDeleteConfirm(cliente.id_cliente)} 
+                  style={{ marginRight: '10px' }}
+                >
+                  Excluir
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  size="small" 
+                  onClick={() => toast.dismiss()}
+                >
+                  Cancelar
+                </Button>
+              </div>
+          </div>,
+          {
+            position: "top-center", 
+            autoClose: false, 
+            closeOnClick: false, 
+            draggable: false, 
+            closeButton: false,
+          }
+        );
+    };
 
-                <TableBody>
-                  {clientes.map((cliente) => (
-                    <StyledTableRow key={cliente.id}>
-                      <TableCell>
-                        <Chip 
-                          label={cliente.id}
-                          size="small"
-                          sx={{ 
-                            backgroundColor: 'rgba(67, 206, 162, 0.15)',
-                            fontWeight: 600,
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Avatar sx={{ 
-                          bgcolor: 'rgba(67, 206, 162, 0.8)', 
-                          width: 36, 
-                          height: 36 
-                        }}>
-                          <Person />
-                        </Avatar>
-                        {cliente.nome}
-                      </TableCell>
-                      <TableCell>{cliente.cpf}</TableCell>
-                      <TableCell>{cliente.telefone}</TableCell>
-                      <TableCell align="center">
-                        <ActionButton color="primary">
-                          <Visibility color="primary" />
-                        </ActionButton>
-                        <ActionButton color="secondary">
-                          <Edit color="secondary" />
-                        </ActionButton>
-                        <ActionButton color="error">
-                          <Delete color="error" />
-                        </ActionButton>
-                      </TableCell>
-                    </StyledTableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </Paper>
-      </Box>
+    const handleDeleteConfirm = async (id) => {
+        try {
+          await deleteCliente(id); 
+          fetchClientes();
+          toast.dismiss(); // Fecha o toast após a exclusão
+          toast.success('Cliente excluído com sucesso!', { position: "top-center" });
+        } catch (error) {
+          console.error('Erro ao deletar cliente:', error);
+          toast.error('Erro ao excluir cliente.', { position: "top-center" });
+        }
+    };
+
+  return(
+        <Box sx={{
+          padding: { xs: 1.5, sm: 2, md: 3 },
+          backgroundColor: '#f8f9fa', 
+          minHeight: '100vh'
+        }}>
+          <ToastContainer /> {/* Adicionar este componente para exibir os toasts */}
+          
+          <Paper 
+            elevation={3} 
+            sx={{
+              borderRadius: '12px',
+              overflow: 'hidden',
+              boxShadow: '0 6px 18px rgba(0, 0, 0, 0.1)',
+            }}
+          >
+            <Toolbar sx={{ 
+              background: 'linear-gradient(90deg, #3a7bd5 0%, #00d2ff 100%)',
+              padding: { xs: '12px 16px', md: '16px 24px' }, 
+              display: 'flex', 
+              flexDirection: isSmall ? 'column' : 'row',
+              alignItems: isSmall ? 'stretch' : 'center',
+              gap: isSmall ? 2 : 0,
+              justifyContent: 'space-between',
+            }}>
+              <Typography 
+                variant={isSmall ? "h6" : "h5"} 
+                sx={{
+                  color: 'white',
+                  fontWeight: 600,
+                  letterSpacing: '0.5px',
+                  textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+                }}
+              >
+                Clientes
+              </Typography>
+              <AddButton 
+                color="primary" 
+                variant="contained" 
+                onClick={() => navigate('/cliente')} 
+                startIcon={<Add />}
+                fullWidth={isSmall}
+              >
+                Novo Cliente
+              </AddButton>
+            </Toolbar>
+
+            {isMobile ? (
+              // Visualização Mobile: Cards
+              <Box sx={{ p: 2 }}>
+                {clientes.length > 0 ? (
+                  clientes.map(cliente => (
+                    <ClienteCard 
+                      key={cliente.id_cliente}
+                      id={cliente.id_cliente}
+                      nome={cliente.nome}
+                      cpf={cliente.cpf}
+                      telefone={cliente.telefone}
+                      onView={() => navigate(`/cliente/view/${cliente.id_cliente}`)}
+                      onEdit={() => navigate(`/cliente/edit/${cliente.id_cliente}`)}
+                      onDelete={() => handleDeleteClick(cliente)}
+                    />
+                  ))
+                ) : (
+                  <Typography 
+                    align="center" 
+                    sx={{ py: 4, color: 'text.secondary' }}
+                  >
+                    Nenhum cliente encontrado
+                  </Typography>
+                )}
+              </Box>
+            ) : (
+              // Visualização Desktop: Tabela
+              <TableContainer>
+                <Table>
+                  <StyledTableHead>
+                    <TableRow>
+                      <TableCell>ID</TableCell>
+                      <TableCell>Nome</TableCell>
+                      <TableCell>CPF</TableCell>  
+                      <TableCell>Telefone</TableCell>
+                      <TableCell align="center">Ações</TableCell>
+                    </TableRow>
+                  </StyledTableHead>
+
+                  <TableBody>
+                    {clientes.length > 0 ? (
+                      clientes.map(cliente => (
+                        <StyledTableRow key={cliente.id_cliente}>
+                          <TableCell>{cliente.id_cliente}</TableCell>
+                          <TableCell>{cliente.nome}</TableCell>
+                          <TableCell>{formatCpf(cliente.cpf)}</TableCell>
+                          <TableCell>{formatTelefone(cliente.telefone)} </TableCell>
+                          <TableCell align="center">
+                            <IconButton 
+                              onClick={() => navigate(`/cliente/view/${cliente.id_cliente}`)}
+                              sx={{ 
+                                color: '#3a7bd5', 
+                                backgroundColor: 'rgba(58, 123, 213, 0.08)',
+                                margin: '0 5px',
+                                transition: 'all 0.2s',
+                                '&:hover': { 
+                                  backgroundColor: 'rgba(58, 123, 213, 0.15)',
+                                  transform: 'translateY(-2px)',
+                                }
+                              }}
+                            >
+                              <Visibility />
+                            </IconButton>
+                            <IconButton 
+                              onClick={() => navigate(`/cliente/edit/${cliente.id_cliente}`)}
+                              sx={{ 
+                                color: '#ffc107', 
+                                backgroundColor: 'rgba(255, 193, 7, 0.08)',
+                                margin: '0 5px',
+                                transition: 'all 0.2s',
+                                '&:hover': { 
+                                  backgroundColor: 'rgba(255, 193, 7, 0.15)',
+                                  transform: 'translateY(-2px)',
+                                }
+                              }}
+                            >
+                              <Edit />
+                            </IconButton>
+                            <IconButton 
+                              onClick={() => handleDeleteClick(cliente)}
+                              sx={{ 
+                                color: '#f44336', 
+                                backgroundColor: 'rgba(244, 67, 54, 0.08)',
+                                margin: '0 5px',
+                                transition: 'all 0.2s',
+                                '&:hover': { 
+                                  backgroundColor: 'rgba(244, 67, 54, 0.15)',
+                                  transform: 'translateY(-2px)',
+                                }
+                              }}
+                            >
+                              <Delete />
+                            </IconButton>
+                          </TableCell>
+                        </StyledTableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                          Nenhum cliente encontrado
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Paper>
+        </Box>
     );
 };
-
 export default ClienteList;

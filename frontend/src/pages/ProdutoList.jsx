@@ -1,96 +1,73 @@
-import React from "react";
+import React, { useState,useEffect } from "react";
 import { 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
-  Paper, IconButton, Typography, Button, Toolbar, Box, Chip, 
-  useMediaQuery, useTheme, Card, CardContent, CardActions, Grid, Divider
+  Paper, IconButton, Typography, Button, Toolbar, Box, 
+  Card, CardContent, CardActions, Divider, Chip, Avatar,
+  Grid, useMediaQuery, useTheme, Badge
 } from '@mui/material';
-import { 
-  Edit, Delete, Visibility, Add, MoreVert, ShoppingCart
-} from '@mui/icons-material';
-import { styled } from '@mui/material/styles';
+import { Edit, Delete, Visibility, Add, Person, Phone} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { styled } from '@mui/material/styles';
+import {getProdutos,deleteProduto } from '../services/produtoService';
+import { ToastContainer, toast } from 'react-toastify'; 
+import 'react-toastify/dist/ReactToastify.css'; 
 
-// Estilizando o cabeçalho da tabela
 const StyledTableHead = styled(TableHead)(({ theme }) => ({
-  background: 'linear-gradient(to right, #f9f9f9, #f0f0f0)',
+  backgroundColor: '#f5f5f5',
   '& .MuiTableCell-head': {
     fontWeight: 700,
     color: '#333',
     fontSize: '0.95rem',
-    padding: '16px 20px',
-    borderBottom: '2px solid #FF416C',
+    borderBottom: '2px solid #3a7bd5',
+    padding: '16px 24px',
   },
 }));
 
-// Estilizando as linhas da tabela
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
   '&:nth-of-type(odd)': {
-    backgroundColor: 'rgba(255, 65, 108, 0.03)',
+    backgroundColor: 'rgba(58, 123, 213, 0.03)',
   },
   '&:hover': {
-    backgroundColor: 'rgba(255, 65, 108, 0.07)',
-    transition: 'background-color 0.3s ease',
+    backgroundColor: 'rgba(58, 123, 213, 0.08)',
+    transition: 'background-color 0.2s ease',
   },
-  '& .MuiTableCell-root': {
-    padding: '14px 20px',
-  }
 }));
 
-// Botão "Novo" estilizado
 const AddButton = styled(Button)(({ theme }) => ({
-  backgroundColor: '#FF416C',
-  color: 'white',
+  backgroundColor: '#3a7bd5',
   borderRadius: '10px',
-  padding: '8px 20px',
+  paddingLeft: 20,
+  paddingRight: 20,
+  boxShadow: '0 4px 12px rgba(58, 123, 213, 0.3)',
   textTransform: 'none',
   fontWeight: 600,
-  boxShadow: '0 4px 10px rgba(255, 65, 108, 0.3)',
   transition: 'all 0.3s ease',
   '&:hover': {
-    backgroundColor: '#FF4B2B',
-    transform: 'translateY(-3px)',
-    boxShadow: '0 6px 15px rgba(255, 65, 108, 0.4)',
+    backgroundColor: '#1e5daa',
+    boxShadow: '0 6px 16px rgba(58, 123, 213, 0.4)',
+    transform: 'translateY(-2px)',
   },
 }));
 
-// Botões de ação estilizados
-const ActionIconButton = styled(IconButton)(({ color }) => ({
-  backgroundColor: color === 'primary' 
-    ? 'rgba(33, 150, 243, 0.1)' 
-    : color === 'secondary' 
-      ? 'rgba(156, 39, 176, 0.1)' 
-      : 'rgba(244, 67, 54, 0.1)',
-  margin: '0 5px',
-  padding: 8,
-  transition: 'all 0.2s ease',
-  '&:hover': {
-    backgroundColor: color === 'primary' 
-      ? 'rgba(33, 150, 243, 0.2)' 
-      : color === 'secondary' 
-        ? 'rgba(156, 39, 176, 0.2)' 
-        : 'rgba(244, 67, 54, 0.2)',
-    transform: 'translateY(-2px)',
-    boxShadow: '0 3px 8px rgba(0, 0, 0, 0.1)',
-  }
-}));
+// --- Função para formatar preço ---
+const formatarPreco = (valor) => {
+  if (valor == null || isNaN(valor)) return '';
 
-// Componente para formatar o valor monetário
-const PriceDisplay = ({ value }) => {
   const formattedValue = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency: 'BRL'
-  }).format(value);
-  
+    currency: 'BRL',
+  }).format(valor);
+
   return (
-    <Typography 
-      variant="body2" 
-      sx={{ 
-        fontWeight: 600, 
+    <Typography
+      variant="body2"
+      sx={{
+        fontWeight: 600,
         color: '#444',
         background: 'rgba(255, 65, 108, 0.05)',
         padding: '6px 10px',
         borderRadius: '6px',
-        display: 'inline-block'
+        display: 'inline-block',
       }}
     >
       {formattedValue}
@@ -99,81 +76,134 @@ const PriceDisplay = ({ value }) => {
 };
 
 // Card para visualização mobile
-const ProductCard = ({ id, name, description, price }) => {
-  return (
-    <Card 
-      elevation={2} 
-      sx={{ 
-        mb: 2, 
-        borderRadius: '12px',
-        overflow: 'hidden',
-        transition: 'transform 0.3s ease',
-        '&:hover': {
-          transform: 'translateY(-5px)',
-          boxShadow: '0 8px 20px rgba(0, 0, 0, 0.1)'
-        }
-      }}
-    >
-      <Box sx={{ 
-        p: 2, 
-        display: 'flex', 
-        alignItems: 'center',
-        backgroundColor: 'rgba(255, 65, 108, 0.03)'
-      }}>
-        <Box 
+const ProdutoCard = ({ id, nome, descricao, valor_unitario, foto, onView, onEdit, onDelete }) => {
+  return ( 
+        <Card 
           sx={{ 
-            bgcolor: 'rgba(255, 65, 108, 0.1)', 
-            p: 1.5, 
-            borderRadius: '50%', 
-            mr: 2,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
+            mb: 2, 
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+            borderRadius: '10px',
+            overflow: 'hidden',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 8px 20px rgba(0, 0, 0, 0.12)'
+            }
           }}
         >
-          <ShoppingCart sx={{ color: '#FF416C' }} />
-        </Box>
-        <Box>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-            {name}
-          </Typography>
-          <Chip 
-            label={`ID: ${id}`} 
-            size="small"
-            sx={{ bgcolor: 'rgba(255, 65, 108, 0.1)', color: '#FF416C', fontWeight: 600 }}
-          />
-        </Box>
-      </Box>
-      
-      <CardContent sx={{ p: 2 }}>
-        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-          {description}
-        </Typography>
-        
-        <Box sx={{ mb: 1 }}>
-          <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
-            Valor:
-          </Typography>
-          <PriceDisplay value={price} />
-        </Box>
-      </CardContent>
-      
-      <Divider />
-      
-      <CardActions sx={{ p: 1.5, justifyContent: 'space-around' }}>
-        <ActionIconButton color="primary" size="small">
-          <Visibility color="primary" />
-        </ActionIconButton>
-        <ActionIconButton color="secondary" size="small">
-          <Edit color="secondary" />
-        </ActionIconButton>
-        <ActionIconButton color="error" size="small">
-          <Delete color="error" />
-        </ActionIconButton>
-      </CardActions>
-    </Card>
-  );
-};
+          <Box 
+            sx={{ 
+              p: 2, 
+              display: 'flex', 
+              alignItems: 'center', 
+              background: 'rgba(58, 123, 213, 0.04)',
+              borderBottom: '1px solid rgba(58, 123, 213, 0.08)'
+            }}
+          >
+            <Avatar 
+              sx={{ 
+                bgcolor: '#3a7bd5', 
+                mr: 2 
+              }}
+            >
+              <Person />
+            </Avatar>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                {nome}
+              </Typography>
+              <Chip 
+                label={`ID: ${id}`}
+                size="small"
+                sx={{ 
+                  backgroundColor: 'rgba(58, 123, 213, 0.1)',
+                  fontWeight: 500,
+                  fontSize: '0.75rem'
+                }}
+              />
+            </Box>
+          </Box>
+          
+          <CardContent sx={{ pt: 2 }}>
+            <Grid container spacing={1}>
+              <Grid item xs={6}>
+                <Typography variant="body2" color="textSecondary">
+                  Descrição:
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                    {descricao}
+                </Typography>
+              </Grid>
+               <Grid item xs={6}>
+                <Typography variant="body2" color="textSecondary">
+                  Preço:
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                  {formatarPreco({valor_unitario})}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} mt={2}>
+              <Typography variant="body2" color="textSecondary" gutterBottom>
+                Foto:
+              </Typography>
+                {foto ? (
+                  <Box
+                  component="img"
+                  src={foto}
+                  alt={nome}
+                  sx={{
+                    maxWidth: '100%',
+                    maxHeight: 150,
+                    borderRadius: 1,
+                    display: 'block',
+                    objectFit: 'contain',
+              }}
+            />
+            ) :  (
+              <Typography variant="body2" color="textSecondary">
+                Sem foto
+              </Typography>
+                )}
+           </Grid>
+            </Grid>
+          </CardContent>
+          
+          <Divider />
+          <CardActions sx={{ justifyContent: 'space-around', p: 1 }}>
+            <IconButton size="small" onClick={onView} sx={{ 
+              color: '#3a7bd5', 
+              backgroundColor: 'rgba(58, 123, 213, 0.08)',
+              '&:hover': { 
+                backgroundColor: 'rgba(58, 123, 213, 0.15)',
+              }
+            }}>
+              <Visibility fontSize="small" />
+            </IconButton>
+            
+            <IconButton size="small" onClick={onEdit} sx={{ 
+              color: '#ffc107', 
+              backgroundColor: 'rgba(255, 193, 7, 0.08)',
+              '&:hover': { 
+                backgroundColor: 'rgba(255, 193, 7, 0.15)',
+              }
+            }}>
+              <Edit fontSize="small" />
+            </IconButton>
+            
+            <IconButton size="small" onClick={onDelete} sx={{ 
+              color: '#f44336', 
+              backgroundColor: 'rgba(244, 67, 54, 0.08)',
+              '&:hover': { 
+                backgroundColor: 'rgba(244, 67, 54, 0.15)',
+              }
+            }}>
+              <Delete fontSize="small" />
+            </IconButton>
+          </CardActions>
+        </Card>
+      );
+    };
+  
 
 function ProdutoList() {
     const navigate = useNavigate();
@@ -181,126 +211,252 @@ function ProdutoList() {
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
 
-    // Dados de exemplo
-    const produtos = [
-      { id: 1, name: 'Produto A', description: 'Descrição do Produto A', price: 99.99 }
-    ];
+    const [produtos,setProdutos] = useState([])
 
-    return (
-        <Box sx={{
-          padding: { xs: 2, sm: 3 },
-          backgroundColor: '#f8f9fa', 
-          minHeight: '100vh'
-        }}>
-          <Paper 
-            elevation={3} 
+    useEffect(() =>{
+          fetchProdutos();
+      },[])
+    
+    const fetchProdutos = async () => {
+        try{
+           const data = await getProdutos();
+           setProdutos(data);
+          }catch(error){
+            console.error('Erro ao buscar produtos:', error);
+            toast.error('Não foi possível carregar os produtos.');
+           }
+        }
+// Função para lidar com o clique no botão de deletar produto
+    const handleDeleteClick = (produto) => {
+        toast(
+          <div>
+              <Typography>
+                Tem certeza que deseja excluir o produto <strong>{produto.nome}</strong>?
+              </Typography>
+              <div style={{ 
+                marginTop: '10px', 
+                display: 'flex', 
+                justifyContent: 'flex-end' 
+              }}>
+                <Button
+                  variant="contained" 
+                  color="error" 
+                  size="small"
+                  onClick={() => handleDeleteConfirm(produto.id_produto)} 
+                  style={{ marginRight: '10px' }}
+                >
+                  Excluir
+                </Button>
+                <Button 
+                  variant="outlined" 
+                  size="small" 
+                  onClick={() => toast.dismiss()}
+                >
+                  Cancelar
+                </Button>
+              </div>
+          </div>,
+          {
+            position: "top-center", 
+            autoClose: false, 
+            closeOnClick: false, 
+            draggable: false, 
+            closeButton: false,
+          }
+        );
+    };
+
+    const handleDeleteConfirm = async (id) => {
+        try {
+          await deleteProduto(id); 
+          fetchProdutos();
+          toast.dismiss(); // Fecha o toast após a exclusão
+          toast.success('Produto excluído com sucesso!', { position: "top-center" });
+        } catch (error) {
+          console.error('Erro ao deletar produto:', error);
+          toast.error('Erro ao excluir produto.', { position: "top-center" });
+        }
+    };
+
+   return (
+    <Box
+      sx={{
+        padding: { xs: 1.5, sm: 2, md: 3 },
+        backgroundColor: '#f8f9fa',
+        minHeight: '100vh',
+      }}
+    >
+      <ToastContainer />
+
+      <Paper
+        elevation={3}
+        sx={{
+          borderRadius: 3,
+          overflow: 'hidden',
+          boxShadow: '0 6px 18px rgba(0, 0, 0, 0.1)',
+        }}
+      >
+        <Toolbar
+          sx={{
+            background: 'linear-gradient(90deg, #3a7bd5 0%, #00d2ff 100%)',
+            padding: { xs: '12px 16px', md: '16px 24px' },
+            display: 'flex',
+            flexDirection: isSmall ? 'column' : 'row',
+            alignItems: isSmall ? 'stretch' : 'center',
+            gap: isSmall ? 2 : 0,
+            justifyContent: 'space-between',
+          }}
+        >
+          <Typography
+            variant={isSmall ? 'h6' : 'h5'}
             sx={{
-              borderRadius: '16px',
-              overflow: 'hidden',
-              boxShadow: '0 5px 20px rgba(0, 0, 0, 0.08)',
+              color: 'white',
+              fontWeight: 600,
+              letterSpacing: '0.5px',
+              textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
             }}
           >
-            <Toolbar sx={{ 
-              background: 'linear-gradient(45deg, #FF4B2B 0%, #FF416C 100%)',
-              padding: { xs: '12px 16px', md: '16px 24px' }, 
-              display: 'flex', 
-              flexDirection: isSmall ? 'column' : 'row',
-              alignItems: 'center',
-              gap: isSmall ? 2 : 0,
-              justifyContent: 'space-between',
-            }}>
-              <Typography 
-                variant={isSmall ? "h6" : "h5"} 
-                sx={{
-                  color: 'white',
-                  fontWeight: 700,
-                  letterSpacing: '0.5px',
-                  textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
-                }}
-              >
-                Produtos
-              </Typography>
-              
-              <AddButton 
-                onClick={() => navigate('/produto')} 
-                startIcon={<Add />}
-                fullWidth={isSmall}
-              >
-                Novo Produto
-              </AddButton>
-            </Toolbar>
+            Produtos
+          </Typography>
+          <AddButton
+            color="primary"
+            variant="contained"
+            onClick={() => navigate('/produto')}
+            startIcon={<Add />}
+            fullWidth={isSmall}
+          >
+            Novo Produto
+          </AddButton>
+        </Toolbar>
 
-            {isMobile ? (
-              <Box sx={{ p: 2 }}>
-                <Grid container spacing={2}>
-                  {produtos.map(produto => (
-                    <Grid item xs={12} key={produto.id}>
-                      <ProductCard 
-                        id={produto.id}
-                        name={produto.name}
-                        description={produto.description}
-                        price={produto.price}
-                      />
-                    </Grid>
-                  ))}
-                </Grid>
-              </Box>
+        {isMobile ? (
+          // Mobile cards
+          <Box sx={{ p: 2 }}>
+            {produtos.length > 0 ? (
+              produtos.map((produto) => (
+                <ProdutoCard
+                  key={produto.id_produto}
+                  id={produto.id_produto}
+                  nome={produto.nome}
+                  descricao={produto.descricao}
+                  valor_unitario={produto.valor_unitario}
+                  foto={produto.foto}
+                  onView={() => navigate(`/produto/view/${produto.id_produto}`)}
+                  onEdit={() => navigate(`/produto/edit/${produto.id_produto}`)}
+                  onDelete={() => handleDeleteClick(produto)}
+                />
+              ))
             ) : (
-              <TableContainer>
-                <Table>
-                  <StyledTableHead>
-                    <TableRow>
-                      <TableCell>ID</TableCell>
-                      <TableCell>Nome</TableCell>
-                      <TableCell>Descrição</TableCell>
-                      <TableCell>Valor Unitário</TableCell>
-                      <TableCell align="center">Ações</TableCell>
-                    </TableRow>
-                  </StyledTableHead>
-
-                  <TableBody>
-                    {produtos.map(produto => (
-                      <StyledTableRow key={produto.id}>
-                        <TableCell>
-                          <Chip 
-                            label={produto.id} 
-                            size="small" 
-                            sx={{ 
-                              backgroundColor: 'rgba(255, 65, 108, 0.1)',
-                              fontWeight: 600, 
-                              color: '#FF416C'
-                            }} 
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {produto.name}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>{produto.description}</TableCell>
-                        <TableCell>
-                          <PriceDisplay value={produto.price} />
-                        </TableCell>
-                        <TableCell align="center">
-                          <ActionIconButton color="primary">
-                            <Visibility color="primary" />
-                          </ActionIconButton>
-                          <ActionIconButton color="secondary">
-                            <Edit color="secondary" />
-                          </ActionIconButton>
-                          <ActionIconButton color="error">
-                            <Delete color="error" />
-                          </ActionIconButton>
-                        </TableCell>
-                      </StyledTableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              <Typography align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                Nenhum produto encontrado
+              </Typography>
             )}
-          </Paper>
-        </Box>
-    );
-};
+          </Box>
+        ) : (
+          // Desktop table
+          <TableContainer>
+            <Table>
+              <StyledTableHead>
+                <TableRow>
+                  <TableCell>ID</TableCell>
+                  <TableCell>Nome</TableCell>
+                  <TableCell>Descrição</TableCell>
+                  <TableCell>Preço</TableCell>
+                  <TableCell>Foto</TableCell>
+                  <TableCell align="center">Ações</TableCell>
+                </TableRow>
+              </StyledTableHead>
+
+              <TableBody>
+                {produtos.length > 0 ? (
+                  produtos.map((produto) => (
+                    <StyledTableRow key={produto.id_produto}>
+                      <TableCell>{produto.id_produto}</TableCell>
+                      <TableCell>{produto.nome}</TableCell>
+                      <TableCell>{produto.descricao}</TableCell>
+                      <TableCell>{formatarPreco(produto.valor_unitario)}</TableCell>
+                      <TableCell>
+                        {produto.foto ? (
+                          <Box
+                            component="img"
+                            src={produto.foto}
+                            alt={produto.nome}
+                            sx={{
+                              maxWidth: 100,
+                              maxHeight: 100,
+                              borderRadius: 1,
+                              objectFit: 'contain',
+                            }}
+                          />
+                        ) : (
+                          <Typography variant="body2" color="textSecondary">
+                            Sem foto
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell align="center">
+                        <IconButton
+                          onClick={() => navigate(`/produto/view/${produto.id_produto}`)}
+                          sx={{
+                            color: '#3a7bd5',
+                            backgroundColor: 'rgba(58, 123, 213, 0.08)',
+                            margin: '0 5px',
+                            transition: 'all 0.2s',
+                            '&:hover': {
+                              backgroundColor: 'rgba(58, 123, 213, 0.15)',
+                              transform: 'translateY(-2px)',
+                            },
+                          }}
+                        >
+                          <Visibility />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => navigate(`/produto/edit/${produto.id_produto}`)}
+                          sx={{
+                            color: '#ffc107',
+                            backgroundColor: 'rgba(255, 193, 7, 0.08)',
+                            margin: '0 5px',
+                            transition: 'all 0.2s',
+                            '&:hover': {
+                              backgroundColor: 'rgba(255, 193, 7, 0.15)',
+                              transform: 'translateY(-2px)',
+                            },
+                          }}
+                        >
+                          <Edit />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => handleDeleteClick(produto)}
+                          sx={{
+                            color: '#f44336',
+                            backgroundColor: 'rgba(244, 67, 54, 0.08)',
+                            margin: '0 5px',
+                            transition: 'all 0.2s',
+                            '&:hover': {
+                              backgroundColor: 'rgba(244, 67, 54, 0.15)',
+                              transform: 'translateY(-2px)',
+                            },
+                          }}
+                        >
+                          <Delete />
+                        </IconButton>
+                      </TableCell>
+                    </StyledTableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                      Nenhum produto encontrado
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Paper>
+    </Box>
+  );
+}
 
 export default ProdutoList;
