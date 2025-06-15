@@ -3,10 +3,12 @@ import { Box, Typography, Container, Paper } from "@mui/material";
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import StarIcon from '@mui/icons-material/Star';
 import { useNavigate } from "react-router-dom";
+import {useAuth} from '../context/AuthContext';
 
 const Home = () => {
 
     const navigate = useNavigate(); // Inicializando useNavigate
+    const { usuarioLogado, grupoUsuario } = useAuth();
 
     const handleNavigation = (page) => {
         navigate(`/${page.toLowerCase()}`); // Função para navegar para a página correspondente
@@ -33,6 +35,7 @@ const Home = () => {
                 mb: 4,
                 boxShadow: '0 10px 25px rgba(138, 45, 226, 0.25)',
             }}>
+
                 <Typography 
                     variant="h4" 
                     sx={{ 
@@ -56,6 +59,16 @@ const Home = () => {
                 >
                     Sistema de gerenciamento de comandas e produtos
                 </Typography>
+
+               <Box sx={{ mt: 3, textAlign: 'center' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, color:'white', fontSize:14}}>
+                        Usuário: {usuarioLogado || 'Não autenticado'}
+                    </Typography>
+                    <Typography variant="subtitle1" sx={{ color: 'white', fontSize:14 }}>
+                        Grupo: {grupoUsuario || 'Sem grupo'}
+                    </Typography>
+                </Box>
+
             </Paper>
 
             <Box sx={{ 

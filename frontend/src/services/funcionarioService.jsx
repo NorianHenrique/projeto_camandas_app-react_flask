@@ -5,6 +5,34 @@ const PROXY_URL = import.meta.env.VITE_PROXY_BASE_URL + "funcionario/";
 // Configuração global do Axios para incluir credenciais (cookies)
 axios.defaults.withCredentials = true;
 
+// Função para configurar o token dinamicamente
+const setAuthToken = (token) => {
+  if (token) {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    delete axios.defaults.headers.common['Authorization'];
+  }
+};
+
+// Função para obter token do localStorage ou sessionStorage
+const getToken = () => {
+  return localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+};
+
+// Interceptor para adicionar token automaticamente a todas as requisições
+axios.interceptors.request.use(
+  (config) => {
+    const token = getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Obter todos os funcionários
 export const getFuncionarios = async () => {
     try {
@@ -55,19 +83,20 @@ export const createFuncionario = async (funcionario) => {
 export const updateFuncionario = async (id, funcionario) => {
   if (!id) throw new Error("ID do funcionário é obrigatório para atualização");
 
-  const funcionarioData = { ...funcionario };
+  const funcionarioData = { 
+    ...funcionario, 
+    id_funcionario: id 
+  };
 
-  // Se não quiser alterar a senha, remova o campo ou deixe vazio para o backend entender
-  if (!funcionarioData.senha) {
-    funcionarioData.manter_senha = true;
+  // Se não quiser alterar a senha, apenas remova o campo
+  if (!funcionarioData.senha || funcionarioData.senha === '') {
     delete funcionarioData.senha;
   }
 
   try {
     const response = await axios.put(
       `${PROXY_URL}`,
-      funcionarioData,
-      { params: { id_funcionario: id } }
+      funcionarioData
     );
     return response.data;
   } catch (error) {
@@ -108,6 +137,43 @@ export const checkCpfExists = async (cpf) => {
         return response.data;
     } catch (error) {
         console.error("Erro ao verificar CPF:", error);
+        throw error;
+    }
+};
+
+export const loginFuncionario = async (cpf, senha) => {
+    if (!cpf || !senha) {
+        throw new Error("CPF e senha são obrigatórios para login");
+    }
+
+    try {
+        // Limpar CPF antes de enviar (remove formatação)
+        const cpfLimpo = cpf.replace(/\D/g, '');
+        
+        console.log('Tentando login com CPF:', cpfLimpo);
+        
+        const response = await axios.post(`${PROXY_URL}login`, { 
+            cpf: cpfLimpo, 
+            senha 
+        });
+        
+        console.log('Login bem-sucedido:', response.data);
+        return response.data;
+        
+    } catch (error) {
+        console.error("Erro ao realizar login do funcionário:", error);
+        
+        // Log mais detalhado do erro
+        if (error.response) {
+            console.error('Dados da resposta de erro:', error.response.data);
+            console.error('Status da resposta:', error.response.status);
+            console.error('Headers da resposta:', error.response.headers);
+        } else if (error.request) {
+            console.error('Requisição feita mas sem resposta:', error.request);
+        } else {
+            console.error('Erro na configuração da requisição:', error.message);
+        }
+        
         throw error;
     }
 };

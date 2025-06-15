@@ -5,12 +5,14 @@ import {
   Card, CardContent, CardActions, Divider, Chip, Avatar,
   Grid, useMediaQuery, useTheme, Badge
 } from '@mui/material';
-import { Edit, Delete, Visibility, Add, Person, Phone} from '@mui/icons-material';
+import { Edit, Delete, Visibility, Add, Person, Phone, GetApp} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import {getClientes,deleteCliente } from '../services/clienteService';
 import { ToastContainer, toast } from 'react-toastify'; 
 import 'react-toastify/dist/ReactToastify.css'; 
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // Estilizando o cabeçalho da tabela
 const StyledTableHead = styled(TableHead)(({ theme }) => ({
@@ -253,6 +255,40 @@ function ClienteList(){
         }
     };
 
+    const handleExportPDF = () => {
+          const doc = new jsPDF();
+    
+       
+          doc.setFontSize(16);
+          doc.text('Relatório de Clientes', 14, 22);
+    
+        
+          const tableColumn = ["ID", "Nome", "CPF","Telefone"];
+          const tableRows = [];
+    
+          clientes.forEach((cli) => {
+            const rowData = [
+              cli.id_cliente,
+              cli.nome,
+              formatCpf(cli.cpf),
+              formatTelefone(cli.telefone),
+            ];
+            tableRows.push(rowData);
+          });
+    
+          autoTable(doc, {
+            startY: 30,
+            head: [tableColumn],
+            body: tableRows,
+            styles: {
+              fontSize: 10,
+            },
+          });
+    
+          doc.save('clientes.pdf');
+        };
+
+
   return(
         <Box sx={{
           padding: { xs: 1.5, sm: 2, md: 3 },
@@ -298,6 +334,24 @@ function ClienteList(){
               >
                 Novo Cliente
               </AddButton>
+                <Button startIcon={<GetApp />}
+                    variant="outlined"
+                    onClick={handleExportPDF}
+                    sx={{
+                        ml: isSmall ? 0 : 2,
+                        mt: isSmall ? 1 : 0,
+                        borderColor: 'white',
+                        color: 'white',
+                        fontWeight: 600,
+                        textTransform: 'none',
+                            '&:hover': {
+                            backgroundColor: 'rgba(255,255,255,0.1)',
+                            borderColor: 'white',
+                              },
+                          }}
+                      >
+                      Exportar PDF
+                  </Button>
             </Toolbar>
 
             {isMobile ? (

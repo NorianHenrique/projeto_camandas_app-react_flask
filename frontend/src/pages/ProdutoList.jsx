@@ -5,12 +5,14 @@ import {
   Card, CardContent, CardActions, Divider, Chip, Avatar,
   Grid, useMediaQuery, useTheme, Badge
 } from '@mui/material';
-import { Edit, Delete, Visibility, Add, Person, Phone} from '@mui/icons-material';
+import { Edit, Delete, Visibility, Add, Person, Phone, GetApp} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import {getProdutos,deleteProduto } from '../services/produtoService';
 import { ToastContainer, toast } from 'react-toastify'; 
 import 'react-toastify/dist/ReactToastify.css'; 
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const StyledTableHead = styled(TableHead)(({ theme }) => ({
   backgroundColor: '#f5f5f5',
@@ -139,7 +141,7 @@ const ProdutoCard = ({ id, nome, descricao, valor_unitario, foto, onView, onEdit
                   Preço:
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  {formatarPreco({valor_unitario})}
+                  {formatarPreco(valor_unitario)}
                 </Typography>
               </Grid>
               <Grid item xs={12} mt={2}>
@@ -278,6 +280,68 @@ function ProdutoList() {
         }
     };
 
+   const fetchImageAsBase64 = async (url) => {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+ const generatePDF = async () => {
+  const doc = new jsPDF();
+  doc.setFontSize(20);
+  doc.text('Relatório de Produtos', 14, 22);
+
+  const tableColumn = ["ID", "Nome", "Descrição", "Preço", "Imagem"];
+  const tableRows = [];
+  const imagens = [];
+
+  for (const produto of produtos) {
+    const imagemBase64 = produto.foto ? await fetchImageAsBase64(produto.foto) : null;
+    imagens.push(imagemBase64);
+    tableRows.push([
+      produto.id_produto,
+      produto.nome,
+      produto.descricao,
+      produto.valor_unitario,
+      '' 
+    ]);
+  }
+
+  const getImageFormat = (base64) => {
+    if (!base64) return 'JPEG';
+    if (base64.includes('image/png')) return 'PNG';
+    if (base64.includes('image/jpeg') || base64.includes('image/jpg')) return 'JPEG';
+    return 'JPEG';
+  };
+
+  autoTable(doc, {
+    head: [tableColumn],
+    body: tableRows,
+    startY: 30,
+    styles: {
+      cellPadding: 3,
+      minCellHeight: 25,
+    },
+    didDrawCell: (data) => {
+      if (data.section === 'body' && data.column.index === 4 && imagens[data.row.index]) {
+        const imgWidth = 20;
+        const imgHeight = 20;
+        const x = data.cell.x + (data.cell.width - imgWidth) / 2;
+        const y = data.cell.y + (data.cell.height - imgHeight) / 2;
+        const format = getImageFormat(imagens[data.row.index]);
+        doc.addImage(imagens[data.row.index], format, x, y, imgWidth, imgHeight);
+      }
+    }
+  });
+
+  doc.save('produtos.pdf');
+};
+
    return (
     <Box
       sx={{
@@ -327,6 +391,23 @@ function ProdutoList() {
           >
             Novo Produto
           </AddButton>
+         <Button onClick={generatePDF} startIcon={<GetApp />}
+              variant="outlined"
+                      sx={{
+                          ml: isSmall ? 0 : 2,
+                          mt: isSmall ? 1 : 0,
+                          borderColor: 'white',
+                          color: 'white',
+                          fontWeight: 600,
+                          textTransform: 'none',
+                             '&:hover': {
+                            backgroundColor: 'rgba(255,255,255,0.1)',
+                            borderColor: 'white',
+                          },
+                      }}
+                    >
+                Exportar PDF
+          </Button>
         </Toolbar>
 
         {isMobile ? (

@@ -5,13 +5,15 @@ import {
   Card, CardContent, CardActions, Divider, Chip, Avatar,
   Grid, useMediaQuery, useTheme
 } from '@mui/material';
-import { Edit, Delete, Visibility, Add, Person } from '@mui/icons-material';
+import { Edit, Delete, Visibility, Add, Person, GetApp } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import {getFuncionarios,deleteFuncionario } from '../services/funcionarioService';
 import { set } from "react-hook-form";
 import { ToastContainer, toast } from 'react-toastify'; 
 import 'react-toastify/dist/ReactToastify.css'; 
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // Estilizando o cabeçalho da tabela
 const StyledTableHead = styled(TableHead)(({ theme }) => ({
@@ -269,6 +271,41 @@ function FuncionarioList(){
         }
     };
 
+    const handleExportPDF = () => {
+      const doc = new jsPDF();
+
+   
+      doc.setFontSize(16);
+      doc.text('Relatório de Funcionários', 14, 22);
+
+    
+      const tableColumn = ["ID", "Nome", "CPF", "Matrícula", "Telefone", "Grupo"];
+      const tableRows = [];
+
+      funcionarios.forEach((func) => {
+        const rowData = [
+          func.id_funcionario,
+          func.nome,
+          formatCpf(func.cpf),
+          func.matricula,
+          formatTelefone(func.telefone),
+          func.grupo
+        ];
+        tableRows.push(rowData);
+      });
+
+      autoTable(doc, {
+        startY: 30,
+        head: [tableColumn],
+        body: tableRows,
+        styles: {
+          fontSize: 10,
+        },
+      });
+
+      doc.save('funcionarios.pdf');
+    };
+
   return(
         <Box sx={{
           padding: { xs: 1.5, sm: 2, md: 3 },
@@ -314,8 +351,28 @@ function FuncionarioList(){
               >
                 Novo Funcionário
               </AddButton>
+              <Button
+                variant="outlined"
+                startIcon={<GetApp />}
+                onClick={handleExportPDF}
+                sx={{
+                  ml: isSmall ? 0 : 2,
+                  mt: isSmall ? 1 : 0,
+                  borderColor: 'white',
+                  color: 'white',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    borderColor: 'white',
+                  },
+                }}
+              >
+                Exportar PDF
+              </Button>
             </Toolbar>
 
+        
             {isMobile ? (
               // Visualização Mobile: Cards
               <Box sx={{ p: 2 }}>
